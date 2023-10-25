@@ -5,6 +5,8 @@
 #include <vector>
 #include <ctime>
 
+#define SEQ_CST std::memory_order_seq_cst
+#define RELAXED std::memory_order_relaxed
 
 using namespace std;
 
