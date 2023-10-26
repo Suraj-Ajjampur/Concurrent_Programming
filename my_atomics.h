@@ -20,6 +20,7 @@
 #include <thread>
 #include <vector>
 #include <ctime>
+#include <mutex>
 
 #define SEQ_CST std::memory_order_seq_cst
 #define RELAXED std::memory_order_relaxed
@@ -43,28 +44,32 @@ bool cas(atomic<T>& x, T expected, T desired, std::memory_order MEM);
 template <typename T>
 T vcas(atomic<T>& x, T expected, T desired, std::memory_order MEM);
 
-// /**
-//  * @brief A simple Test-and-Set lock implementation.
-//  *
-//  * This class provides a basic Test-and-Set lock, where a flag is used to indicate
-//  * whether the lock is held (true) or unheld (false). When a thread tries to acquire
-//  * the lock using `lock()`, it will spin in a loop until the lock becomes available.
-//  * When the lock is released using `unlock()`, the flag is set to false, indicating
-//  * that the lock is now unheld and available for other threads to acquire.
-//  */
-// class TestAndSetLock {
-// public:
-//     // Constructor to initialize the lock flag to false (unheld)
-//     TestAndSetLock();
+/**
+ * @brief SenseBarrier class for synchronization among multiple threads.
+ *
+ * This class implements a barrier synchronization primitive known as the Sense Barrier.
+ * It allows multiple threads to synchronize at a common point before proceeding further.
+ */
+class SenseBarrier {
+public:
+    /**
+     * @brief Constructs a SenseBarrier with a given number of threads.
+     *
+     * @param numThreads The total number of threads that will synchronize using this barrier.
+     */
+    SenseBarrier(int numThreads);
+    /**
+     * @brief Arrives at the barrier and waits for all other threads to arrive.
+     *
+     * This function is called by each thread when it reaches the barrier. It ensures that
+     * all threads reach the barrier before any of them proceed further.
+     */
+    void ArriveAndWait();
 
-//     // Lock the resource by setting the flag to true (held)
-//     void lock();
-
-//     // Unlock the resource by setting the flag to false (unheld)
-//     void unlock();
-
-// private:
-//     std::atomic<bool> flag; // Atomic boolean flag indicating lock status
-// };
+private:
+    atomic<int> cnt;    // Counter to track arrivals, propagated to all threads
+    atomic<int> sense;  // Sense barrier, propagated to all threads
+    int N;              // Total number of threads
+};
 
 #endif // MY_ATOMICS_H

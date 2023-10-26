@@ -59,3 +59,30 @@ T vcas(atomic<T> &x, T expected, T desired, std::memory_order MEM){
  x.compare_exchange_strong(expected_ref, desired, MEM);
  return expected_ref;
 }
+
+SenseBarrier::SenseBarrier(int numThreads) : cnt(0), sense(0), N(numThreads) {}
+
+void SenseBarrier::ArriveAndWait() {
+        thread_local bool my_sense = 0; // Initialize to false
+
+        // Flip the sense barrier every iteration
+        if (my_sense == 1) {
+            my_sense = 1;
+        } else {
+            my_sense = 0;
+        }
+
+        int cnt_cpy = fai(cnt, 1, SEQ_CST); //Increments the cnt by 1 and assigns to local copy
+
+        // Last thread to arrive resets the counter and sense
+        if (cnt_cpy == N - 1) {
+            cnt.store(0, RELAXED);
+            sense.store(my_sense, RELAXED);
+        } else { // Not the last thread
+            // Wait for other threads to synchronize on the same sense
+            while (sense.load(SEQ_CST) != my_sense) {}
+        }
+}
+
+
+

@@ -28,16 +28,22 @@ typedef struct ticket{
 }ticket_t;
 
 ticket_t myTicket = {0, 0};
+int *pointer = NULL;
 
 // Function to increment the counter
 void counter(int tid) {
     cout << "Thread " << tid << endl;
-
+    static SenseBarrier barrier(NUM_THREADS);
     // Threads will synchronize here before starting their work
-    pthread_barrier_wait(&myBarrier);
+    if(bar_type == "pthread"){
+        pthread_barrier_wait(&myBarrier);
+    }
+    else if (bar_type == "sense"){
+        barrier.ArriveAndWait();
+    }
 
     if (lock_type == "tas") {
-        cout << "Test and Set\n" << endl;
+        //cout << "Test and Set\n" << endl;
         for (int i = 0; i < NUM_ITERATIONS; i++){
             tas_lock(lock_flag);
             // Critical Section - Increment the counter
@@ -46,7 +52,7 @@ void counter(int tid) {
         }
     }
     else if(lock_type == "ttas"){
-        cout << "Test and and Test and Set\n" << endl;
+        //cout << "Test and and Test and Set\n" << endl;
         for (int i = 0; i < NUM_ITERATIONS; i++){
             ttas_lock(lock_flag);
             // Critical Section - Increment the counter
@@ -55,7 +61,7 @@ void counter(int tid) {
         }
     }
     else if (lock_type == "pthread") {
-        cout << "pThread\n" << endl;
+        //cout << "pThread\n" << endl;
         for (int i = 0; i < NUM_ITERATIONS; i++) {
             pthread_mutex_lock(&counter_lock); // Lock acquisition
 
@@ -66,7 +72,7 @@ void counter(int tid) {
         }
     }
     else if (lock_type == "ticket") {
-        cout << "Ticket\n" << endl;
+        //cout << "Ticket\n" << endl;
 
         for (int i = 0; i < NUM_ITERATIONS; i++) {
             ticket_lock(myTicket.next_num, myTicket.now_serving); // Lock acquisition
@@ -82,7 +88,14 @@ void counter(int tid) {
         return;
     }
     // Threads will synchronize here before exiting
-    pthread_barrier_wait(&myBarrier);
+    if(bar_type == "pthread"){
+        pthread_barrier_wait(&myBarrier);
+    }
+    else if (bar_type == "sense"){
+        barrier.ArriveAndWait();
+    }
+
+    
 }
 
 
@@ -173,7 +186,10 @@ int main(int argc, char* argv[]) {
     //Barrier Initialization
     if(bar_type == "pthread"){
     pthread_barrier_init(&myBarrier, NULL, NUM_THREADS);
-    cout << "Barrier Enabled baby!!";
+    cout << "pThread Barrier Enabled!!\n";
+    }
+    else if (bar_type == "sense"){
+
     }
 
     // Create threads and launch the counter function
