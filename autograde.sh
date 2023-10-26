@@ -13,7 +13,7 @@ SCORE=0
 ### Autograder for counter
 
 EXEC="./counter"
-THREADS="4"
+THREADS="2"
 chmod u+x $EXEC
 
 
