@@ -63,8 +63,6 @@ void* thread_main(size_t tid){
 }
 
 
-
-
 int main(int argc, const char* argv[]){
 	
 	// parse args

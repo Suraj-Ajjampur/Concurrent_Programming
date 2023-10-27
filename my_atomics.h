@@ -72,4 +72,35 @@ private:
     int N;              // Total number of threads
 };
 
+
+
+/**
+ *  @brief Mellor-Crummey and Scott(MSCLock) Lock
+ * 
+ *   This lock uses a queue for waiting threads.
+ *   On arrival, we place a node in the queue by append
+ *   It spinds on the node
+ *   On releasing the lock, notify the next thread in the queue
+ */
+class MCSLock{
+public:
+    class Node{
+    public:
+        atomic<Node*> next; //Atomic pointer
+        atomic<bool> wait;
+    };
+
+    atomic<Node*> tail; // Member of MCSLock
+    /** 
+     * @brief Constructs the MCSLock given a pointer to an atomic value
+     * 
+     * @param tail 
+    */
+    MCSLock(atomic<Node*>& tail); 
+
+    void acquire(Node* myNode);
+
+    void release(Node* myNode);
+};
+
 #endif // MY_ATOMICS_H

@@ -1,8 +1,95 @@
-#include "mysort.h"
+#include <iostream>
+#include <atomic>
+#include <thread>
+#include <chrono>
+#include <string>
+#include <ctime>
+#include <fstream>
+#include <pthread.h>
+#include "my_atomics.h"
+#include <getopt.h>
+#include <cstring>
+#include "bucket_sort.h"
+
+// Global variables
+int cntr = 0;
+atomic<bool> lock_flag(false);
+int NUM_THREADS = 5;
+int NUM_ITERATIONS = 10000;
+string lock_type = "pthread"; 
+string bar_type = "pthread";
+pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
+pthread_barrier_t myBarrier;
+
+typedef struct ticket{
+    atomic<int> next_num;
+    atomic<int> now_serving;
+}ticket_t;
+
+ticket_t myTicket = {0, 0};
 
 // Function to print my name
 void printName() {
     cout << "Suraj Ajjampur" << endl;
+}
+
+/**
+ * Function to sort integers from an input file using BucketSort and print the sorted integers to an output file.
+ * 
+ * @param inputFile The path to the input file containing unsorted integers.
+ * @param outputFile The path to the output file where sorted integers will be written.
+ */
+void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
+    // Open the input file
+    ifstream inFile(inputFile);
+    cout << "Performing BucketSort\n" << endl;
+
+    // Check if the input file opened successfully
+    if (!inFile.is_open()) {
+        cerr << "Error: Could not open the input file." << endl;
+        return;
+    }
+
+    // Read integers from the input file into a vector
+    vector<int> numbers;
+    int num;
+    while (inFile >> num) {
+        numbers.push_back(num);
+    }
+
+    // Close the input file
+    inFile.close();
+    
+    // Start measuring time
+    auto start_time = chrono::high_resolution_clock::now();
+
+    // Calling BucketSort function here and get the sorted result
+    vector<int> sortedNumbers = BucketSort(numbers, NUM_THREADS);
+    
+    // Stop measuring time
+    auto end_time = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end_time - start_time);
+
+    // Calculate and print elapsed time in nanoseconds
+    cout << "Time taken: " << duration.count() << " nanoseconds" << endl;
+
+    // Open the output file
+    ofstream outFile(outputFile);
+
+    // Check if the output file opened successfully
+    if (!outFile.is_open()) {
+        cerr << "Error: Could not open the output file." << endl;
+        return;
+    }
+
+    // Write sorted integers to the output file
+    for (int num : sortedNumbers) {
+        outFile << num << endl;
+    }
+
+    // Close the output file
+    outFile.close();
+
 }
 
 /**
@@ -13,68 +100,91 @@ void printName() {
  * @return An integer indicating the exit status.
  */
 int main(int argc, char* argv[]) {
-    // Check if any command-line arguments are provided
-    if (argc < 2) {
-        cerr << "Usage: " << argv[0] << " [--name] [-i sourcefile.txt] [-o outfile.txt] [-t NUMTHREADS] [--alg=<forkjoin,lkbucket>]" << endl;
-        return 1;
-    }
 
-    // Process command-line arguments
-    string inputFile = "";
     string outputFile = "";
-    int numThreads = 1; // Default number of threads is 5
-    string algorithm = "forkjoin"; // Default algorithm is fork/join
-    printf("Number of args is %d\n", argc);
+    string inputFile = "";
 
-    for (int i = 1; i < argc; ++i) {
-        string arg = argv[i];
-        printf("Processing for %s\n",argv[i]);
+    // Parse command line arguments
+    int c;
 
-        if (arg == "--name") {
-            // Print name
-            printName();
-            return 0;
-        } else if (arg == "-i" && i + 1 < argc) {
-            // Input file option
-            inputFile = argv[++i];
-            // printf("Processing for %s\n",inputFile);
-            std::cout << "The i/p file is " << inputFile << std::endl;
+    // Define long options
+    static struct option long_options[] = {
+        {"name", no_argument, 0, 'm'},
+        {"threads", required_argument, 0, 't'},
+        {"num_iterations", required_argument, 0, 'n'},
+        {"bar", required_argument, 0, 'b'},
+        {"lock", required_argument, 0, 'l'},
+        {"input", required_argument, 0, 'i'},
+        {"output", required_argument, 0, 'o'},
+        {0, 0, 0, 0}
+    };
 
-        } else if (arg == "-o" && i + 1 < argc) {
-            // Output file option
-            outputFile = argv[++i];
-            // printf("Processing for %s\n",outputFile);
-            std::cout << "The o/p file is " << outputFile << std::endl;
+    while (1) {
+        int option_index = 0;
 
+        // Parse the command line options
+        c = getopt_long(argc, argv, "mt:n:b:l:i:o:", long_options, &option_index);
 
-        } else if (arg == "-t" && i + 1 < argc) {
-            // Number of threads option
-            int numThreads2 = atoi(argv[++i]);
-            printf("Number of threads %d\n",numThreads2);
-            numThreads = numThreads2;
-            printf("numThreads Assigned to %d\n", numThreads);
-        } else if (arg == "--alg" && i + 1 < argc) {
-            // Algorithm option
-            algorithm = argv[++i];
-            cout << algorithm << endl;
+        // Detect the end of the options
+        if (c == -1)
+            break;
+
+        switch (c) {
+            case 'm':
+                // Print name
+                cout << "Suraj Ajjampur" << endl;
+                return 0;
+
+            case 't':
+                // Set the number of threads
+                NUM_THREADS = stoi(optarg);
+                break;
+
+            case 'n':
+                // Set the number of iterations
+                NUM_ITERATIONS = stoi(optarg);
+                break;
+            
+            case 'b':
+                //Set the barrier type
+                bar_type = optarg;
+                break;
+
+            case 'l':
+                // Set the lock type
+                lock_type = optarg;
+                break;
+
+            case 'i':
+                // Set the input file
+                inputFile = optarg;
+                cout << "The input file is" << inputFile << endl;
+
+            case 'o':
+                // Set the output file
+                outputFile = optarg;
+                cout << "The output file is " << outputFile << endl;
+                break;
+
+            case '?':
+                // Handle invalid options
+                cerr << "Error: Invalid option." << endl;
+                return 1;
+
+            default:
+                abort();
         }
     }
-
     // Check if input and output files are provided
     if (inputFile.empty() || outputFile.empty()) {
-        cerr << "Error: Input and output file options are required." << endl;
+        cerr << "Error: Output file options are required." << endl;
         return 1;
     }
 
-    // Sort and print the input file using the selected algorithm
-    if (algorithm == "forkjoin") {
-        forkJoinSortAndPrint(inputFile, outputFile, numThreads);
-    } else if (algorithm == "lkbucket") {
-        bucketSortAndPrint(inputFile, outputFile, numThreads);
-    } else {
-        cerr << "Error: Invalid algorithm specified." << endl;
-        return 1;
-    }
+    // Start measuring time
+    auto start_time = chrono::high_resolution_clock::now();
+
+    bucketSortAndPrint(inputFile, outputFile);
 
     return 0;
 }

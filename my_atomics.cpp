@@ -60,6 +60,37 @@ T vcas(atomic<T> &x, T expected, T desired, std::memory_order MEM){
  return expected_ref;
 }
 
+//Parameterized constructor for MCSLock
+MCSLock::MCSLock(atomic<Node*>& tail) : tail(nullptr) {} // Initialization
+
+void MCSLock::acquire(Node* myNode){
+    Node* oldTail = tail.load(SEQ_CST); //Read current value of tail
+    myNode->next.store(nullptr, RELAXED); // Set to NULL as we don't know what it is. (Initialization on my node)
+    while(!cas(tail,oldTail,myNode,SEQ_CST)){
+        oldTail = tail.load(SEQ_CST);
+    }
+    // if oldTail == NULL, we’ve 
+    // acquired the lock
+    // otherwise, wait for it
+    if(oldTail != nullptr) { //This mean we are not the head of the list hence we have to wait
+    myNode->wait.store(true,RELAXED);
+    oldTail->next.store(myNode,SEQ_CST); // Updating the old tail value
+    while (myNode->wait.load(SEQ_CST)) {} //Spin locally till it becomes false
+    }
+}
+
+void MCSLock::release(Node* myNode){
+    Node* m = myNode; //Appending my node to the queue
+    if(cas<MCSLock::Node*>(tail,m, nullptr, SEQ_CST)) { //Swinging tail from the old value to the new value
+    // no one is waiting, and we just 
+    // freed the lock
+    } 
+    else{// hand lock to next waiting thread
+    while(myNode->next.load(SEQ_CST)==NULL){} //Spin until notified
+    myNode->next.load(SEQ_CST)->wait.store(false,SEQ_CST);
+    }
+}
+
 SenseBarrier::SenseBarrier(int numThreads) : cnt(0), sense(0), N(numThreads) {}
 
 void SenseBarrier::ArriveAndWait() {

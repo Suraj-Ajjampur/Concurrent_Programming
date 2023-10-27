@@ -21,8 +21,6 @@ string lock_type = "pthread";
 string bar_type = "pthread";
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
 pthread_barrier_t myBarrier;
-atomic<MCSLock::Node*> tail = nullptr;
-MCSLock mcslock(tail);
 
 typedef struct ticket{
     atomic<int> next_num;
@@ -82,20 +80,6 @@ void counter(int tid) {
             cntr++;
 
             ticket_unlock(myTicket.now_serving); // Unlock
-        }
-    }
-    else if (lock_type == "mcs") {
-        cout << "MCS Lock\n" << endl;
-        MCSLock::Node myNode; // Create a Node for this thread
-
-        for (int i = 0; i < NUM_ITERATIONS; i++) {
-            // Acquire the lock to protect the critical section
-            mcslock.acquire(&myNode);
-
-            // Critical Section - Increment the counter
-            cntr++;
-
-            mcslock.release(&myNode);
         }
     }
     else {

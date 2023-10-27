@@ -9,6 +9,15 @@ Concurrency programming revolves around addressing fundamental issues that arise
 - **Memory Consistency in Multi-Location Accesses**: Managing memory accesses across multiple locations to ensure consistency.
 - **Atomic Read-Modify-Write Operations**: Performing complex operations on shared data with atomicity.
 
+
+## Sorting Algrithm
+
+### Intro to Bucket Sort
+
+Bucket sort is a sorting technique that involves dividing elements into various groups, or buckets. These buckets are formed by uniformly distributing the elements. Once the elements are divided into buckets, they can be sorted using any other sorting algorithm. Finally, the sorted elements are gathered together in an ordered fashion.
+
+This is a program mysort that written. 
+
 ## Lab write-up:
 Your lab write-up, , called `WRITEUP.md`, will be longer this time.  In addition to the normal requirements, you should describe how changing the lock and barrier types in the two programs changes performance. In particular, your write-up should include:
 * A table of all different locks (for both programs), which includes run time, L1 cache hit rate, branch-prediction hit rate, and page-fault count with four threads.
@@ -29,3 +38,7 @@ Your write-up should also include the normal requirements:
 * Any extant bugs
 
 I expect your lab write-up for this project will be longer, around 4 pages.
+
+## References
+
+1. https://www.geeksforgeeks.org/bucket-sort-2/
