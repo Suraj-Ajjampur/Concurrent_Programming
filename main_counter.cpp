@@ -18,7 +18,7 @@ atomic<bool> lock_flag(false);
 int NUM_THREADS = 5;
 int NUM_ITERATIONS = 10000;
 string lock_type = "pthread"; 
-string bar_type = "pthread";
+string bar_type = "";
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
 pthread_barrier_t myBarrier;
 atomic<MCSLock::Node*> tail = nullptr;
@@ -33,8 +33,9 @@ ticket_t myTicket = {0, 0};
 
 // Function to increment the counter
 void counter(int tid) {
-    cout << "Thread " << tid << endl;
+    DEBUG_MSG("Thread ");
     static SenseBarrier barrier(NUM_THREADS);
+    DEBUG_MSG(lock_type);
     // Threads will synchronize here before starting their work
     if(bar_type == "pthread"){
         pthread_barrier_wait(&myBarrier);
@@ -98,6 +99,36 @@ void counter(int tid) {
             mcslock.release(&myNode);
         }
     }
+    else if (lock_type == "peterson"){
+        //cout << "Peterson's Sequential lock" << endl;
+        Petersons petersons(SEQ_CONISTENCY);
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
+            // Acquire the lock to protect the critical section
+            petersons.lock(tid);
+
+            // Critical Section - Increment the counter
+            cntr++;
+            //cout << "counter val: " << cntr << endl;
+
+            //Unlock here
+            petersons.unlock(tid);
+        }
+    }
+    else if (lock_type == "petersonrel"){
+        //cout << "Peterson's Release Consistency lock" << endl;
+        Petersons petersons(RELEASE_CONSISTENCY);
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
+            // Acquire the lock to protect the critical section
+            petersons.lock(tid);
+
+            // Critical Section - Increment the counter
+            cntr++;
+            //cout << "counter val: " << cntr << endl;
+
+            //Unlock here
+            petersons.unlock(tid);
+        }
+    }
     else {
         cout << "Invalid lock type: " << lock_type << endl;
         return;
@@ -109,10 +140,7 @@ void counter(int tid) {
     else if (bar_type == "sense"){
         barrier.ArriveAndWait();
     }
-
-    
 }
-
 
 // Function to print my name
 void printName() {
@@ -205,6 +233,15 @@ int main(int argc, char* argv[]) {
     }
     else if (bar_type == "sense"){
 
+    }
+
+    // If user wants a lock constructed using peterson's algorithm
+    // We have to reset number of threads to 2
+    if (NUM_THREADS > 2 && (lock_type == "peterson" || lock_type == "petersonrel")){
+        //Recalculating number of iterations accordingly
+        NUM_ITERATIONS == NUM_ITERATIONS * (NUM_THREADS - 2);
+        cout << "The lock type is " << lock_type << endl;
+        NUM_THREADS = 2;
     }
 
     // Create threads and launch the counter function

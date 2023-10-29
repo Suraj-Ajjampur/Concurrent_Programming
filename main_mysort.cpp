@@ -15,7 +15,6 @@
 int cntr = 0;
 atomic<bool> lock_flag(false);
 int NUM_THREADS = 5;
-int NUM_ITERATIONS = 10000;
 string lock_type = "pthread"; 
 string bar_type = "pthread";
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
@@ -42,7 +41,7 @@ void printName() {
 void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
     // Open the input file
     ifstream inFile(inputFile);
-    cout << "Performing BucketSort\n" << endl;
+    DEBUG_MSG("Performing BucketSort\n");
 
     // Check if the input file opened successfully
     if (!inFile.is_open()) {
@@ -62,10 +61,13 @@ void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
     
     // Start measuring time
     auto start_time = chrono::high_resolution_clock::now();
-
+    
     // Calling BucketSort function here and get the sorted result
     vector<int> sortedNumbers = BucketSort(numbers, NUM_THREADS);
     
+    if (sortedNumbers.empty()){
+        return;
+    }
     // Stop measuring time
     auto end_time = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::nanoseconds>(end_time - start_time);
@@ -89,7 +91,6 @@ void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
 
     // Close the output file
     outFile.close();
-
 }
 
 /**
@@ -138,11 +139,6 @@ int main(int argc, char* argv[]) {
             case 't':
                 // Set the number of threads
                 NUM_THREADS = stoi(optarg);
-                break;
-
-            case 'n':
-                // Set the number of iterations
-                NUM_ITERATIONS = stoi(optarg);
                 break;
             
             case 'b':

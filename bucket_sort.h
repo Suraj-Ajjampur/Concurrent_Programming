@@ -7,6 +7,7 @@
 #include <mutex>
 #include <thread>
 #include <climits>
+#include "my_atomics.h"
 
 // Declaring BucketSort function prototype
 std::vector<int> BucketSort(std::vector<int>& input_array, int numThreads);

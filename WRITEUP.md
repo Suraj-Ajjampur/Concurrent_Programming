@@ -9,6 +9,8 @@ Concurrency programming revolves around addressing fundamental issues that arise
 - **Memory Consistency in Multi-Location Accesses**: Managing memory accesses across multiple locations to ensure consistency.
 - **Atomic Read-Modify-Write Operations**: Performing complex operations on shared data with atomicity.
 
+### atomic_thread_fence(SEQ_CST); 
+Whenever we have a store to load ordering, we put this call to prevent reordering during release consistency.
 
 ## Sorting Algrithm
 
@@ -38,6 +40,15 @@ Your write-up should also include the normal requirements:
 * Any extant bugs
 
 I expect your lab write-up for this project will be longer, around 4 pages.
+
+# Extant bugs
+
+1. Peterson's lock works fine with DEBUG mode on and the margin for error is quite limited (.3%)
+It doesn't work well when it isn't in Debug mode.
+
+2. Peterson's locks do not work well at all without debug mode. The calulations are wayy off.
+
+
 
 ## References
 
