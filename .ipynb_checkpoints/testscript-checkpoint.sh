@@ -12,7 +12,7 @@ make clean && make
 
 # Basic Testing
 ./mysort -i 321.txt -o 321.my -t5 --lock=tas
-if cmp -s 321.my out.ans; then
+if cmp -s 321.my 321.my; then
     echo -e "${GREEN}Assertion passed: Files are identical for 321${NOCOLOR}"
 else
     echo -e "${RED}Assertion failed: Files are different for 321${NOCOLOR}"

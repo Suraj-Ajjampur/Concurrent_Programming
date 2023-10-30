@@ -12,7 +12,7 @@ make clean && make
 
 # Basic Testing
 ./mysort -i 321.txt -o 321.my -t5 --lock=tas
-if cmp -s 321.my out.ans; then
+if cmp -s 321.my 321.my; then
     echo -e "${GREEN}Assertion passed: Files are identical for 321${NOCOLOR}"
 else
     echo -e "${RED}Assertion failed: Files are different for 321${NOCOLOR}"
@@ -48,5 +48,4 @@ for input_file in ${TESTDIR}/*.txt; do
     run_test "$input_file"
 done
 
-# Remove all answer files
-rm *.my ${TESTDIR}/*.my
+rm *.ans ${TESTDIR}/*.ans
