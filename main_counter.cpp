@@ -1,3 +1,13 @@
+/*****************************************************************
+ * @author Suraj Ajjampur
+ * @file main_counter.cpp
+ * 
+ * @brief Main file of the counter program
+ * 
+ * @date 24 Oct 2023
+********************************************************************/
+
+//Headers
 #include <iostream>
 #include <atomic>
 #include <thread>

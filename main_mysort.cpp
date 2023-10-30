@@ -1,3 +1,12 @@
+/*****************************************************************
+ * @author Suraj Ajjampur
+ * @file main_mysort.cpp
+ * 
+ * @brief Main file of the mysort program
+ * 
+ * @date 25 Oct 2023
+********************************************************************/
+// Includes
 #include <iostream>
 #include <atomic>
 #include <thread>
