@@ -22,7 +22,7 @@
 #include <ctime>
 #include <mutex>
 
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 
 #define DEBUG_MSG(msg) \
     do { \
@@ -36,6 +36,7 @@
 #define ACQUIRE std::memory_order_acquire
 #define RELEASE std::memory_order_release
 #define ACQ_REL std::memory_order_acq_rel
+
 // memory order 0 = Sequencial Consistency
 // memory order 1 = Release consistency
 #define RELEASE_CONSISTENCY true
@@ -87,8 +88,6 @@ private:
     atomic<int> sense;  // Sense barrier, propagated to all threads
     int N;              // Total number of threads
 };
-
-
 
 /**
  *  @brief Mellor-Crummey and Scott(MSCLock) Lock

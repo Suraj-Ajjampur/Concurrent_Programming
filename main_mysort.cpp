@@ -63,9 +63,9 @@ void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
     auto start_time = chrono::high_resolution_clock::now();
     
     // Calling BucketSort function here and get the sorted result
-    vector<int> sortedNumbers = BucketSort(numbers, NUM_THREADS);
+    BucketSort(numbers, NUM_THREADS);
     
-    if (sortedNumbers.empty()){
+    if (numbers.empty()){
         return;
     }
     // Stop measuring time
@@ -85,7 +85,7 @@ void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
     }
 
     // Write sorted integers to the output file
-    for (int num : sortedNumbers) {
+    for (int num : numbers) {
         outFile << num << endl;
     }
 

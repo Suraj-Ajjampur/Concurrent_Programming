@@ -8,8 +8,11 @@
 #include <thread>
 #include <climits>
 #include "my_atomics.h"
+#include <math.h>
+
 
 // Declaring BucketSort function prototype
-std::vector<int> BucketSort(std::vector<int>& input_array, int numThreads);
+void BucketSort(std::vector<int>& A, int numThreads);
+void RadixSort(vector<int>& A);
 
 #endif // BUCKET_SORT_H
