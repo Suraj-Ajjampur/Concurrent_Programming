@@ -60,7 +60,7 @@ done
 # sort -n case1.txt > soln1.txt
 
 EXEC="./mysort"
-THREADS="4"
+THREADS="2"
 chmod u+x $EXEC
 
 

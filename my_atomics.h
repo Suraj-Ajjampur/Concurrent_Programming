@@ -22,8 +22,26 @@
 #include <ctime>
 #include <mutex>
 
+#define DEBUG_MODE 0
+
+#define DEBUG_MSG(msg) \
+    do { \
+        if (DEBUG_MODE) { \
+            std::cout << msg << std::endl; \
+        } \
+    } while(0)
+
+/** Memory order macros **/
 #define SEQ_CST std::memory_order_seq_cst
 #define RELAXED std::memory_order_relaxed
+#define ACQUIRE std::memory_order_acquire
+#define RELEASE std::memory_order_release
+#define ACQ_REL std::memory_order_acq_rel
+
+// memory order 0 = Sequencial Consistency
+// memory order 1 = Release consistency
+#define RELEASE_CONSISTENCY true
+#define SEQ_CONISTENCY false
 
 using namespace std;
 
@@ -72,8 +90,6 @@ private:
     int N;              // Total number of threads
 };
 
-
-
 /**
  *  @brief Mellor-Crummey and Scott(MSCLock) Lock
  * 
@@ -101,6 +117,58 @@ public:
     void acquire(Node* myNode);
 
     void release(Node* myNode);
+};
+
+/**
+ * @class Petersons
+ *
+ * @brief Implements the Peterson's algorithm for mutual exclusion.
+ * 
+ * @ref https://www.geeksforgeeks.org/petersons-algorithm-for-mutual-exclusion-set-1/
+ */
+class Petersons {
+public:
+    atomic<bool> desires[2]; // Array of atomics indicating whether each thread desires the lock.
+    atomic<int> turn; // Turn variable to control access to the critical section.
+    /**
+     * @brief Constructor to initialize the lock.
+     *
+     * The constructor resets the desires of both threads to acquire the lock and sets the turn to one of them.
+     */
+    Petersons(bool memory_order);
+
+    /**
+     * @brief Lock the critical section for a thread for seq consistent memory order
+     *
+     * @param tid The identifier of the thread trying to acquire the lock (0 or 1).
+     */
+    void lock(int tid);
+
+    /**
+     * @brief Unlock the critical section for a thread.
+     *
+     * @param tid The identifier of the thread releasing the lock (0 or 1).
+     */
+    void unlock(int tid);
+
+private:
+    /**
+     * @brief Determine the identifier of the current thread.
+     *
+     * @param tid The identifier of the thread trying to acquire the lock (0 or 1).
+     * @return The identifier of the current thread (0 or 1).
+     */
+    int my(int tid);
+
+    /**
+     * @brief Determine the identifier of the other thread.
+     *
+     * @param tid The identifier of the thread trying to acquire the lock (0 or 1).
+     * @return The identifier of the other thread (0 or 1).
+     */
+    int other(int tid);
+
+    bool mem_order;
 };
 
 #endif // MY_ATOMICS_H

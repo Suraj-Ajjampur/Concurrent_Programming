@@ -1,3 +1,12 @@
+/*****************************************************************
+ * @author Suraj Ajjampur
+ * @file main_mysort.cpp
+ * 
+ * @brief Main file of the mysort program
+ * 
+ * @date 25 Oct 2023
+********************************************************************/
+// Includes
 #include <iostream>
 #include <atomic>
 #include <thread>
@@ -12,21 +21,9 @@
 #include "bucket_sort.h"
 
 // Global variables
-int cntr = 0;
-atomic<bool> lock_flag(false);
 int NUM_THREADS = 5;
-int NUM_ITERATIONS = 10000;
-string lock_type = "pthread"; 
-string bar_type = "pthread";
-pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
-pthread_barrier_t myBarrier;
-
-typedef struct ticket{
-    atomic<int> next_num;
-    atomic<int> now_serving;
-}ticket_t;
-
-ticket_t myTicket = {0, 0};
+string lock_type; 
+string bar_type;
 
 // Function to print my name
 void printName() {
@@ -42,7 +39,7 @@ void printName() {
 void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
     // Open the input file
     ifstream inFile(inputFile);
-    cout << "Performing BucketSort\n" << endl;
+    DEBUG_MSG("Performing BucketSort\n");
 
     // Check if the input file opened successfully
     if (!inFile.is_open()) {
@@ -62,10 +59,13 @@ void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
     
     // Start measuring time
     auto start_time = chrono::high_resolution_clock::now();
-
-    // Calling BucketSort function here and get the sorted result
-    vector<int> sortedNumbers = BucketSort(numbers, NUM_THREADS);
     
+    // Calling BucketSort function here and get the sorted result
+    BucketSort(numbers, NUM_THREADS);
+    
+    if (numbers.empty()){
+        return;
+    }
     // Stop measuring time
     auto end_time = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::nanoseconds>(end_time - start_time);
@@ -83,13 +83,12 @@ void bucketSortAndPrint(const string& inputFile, const string& outputFile) {
     }
 
     // Write sorted integers to the output file
-    for (int num : sortedNumbers) {
+    for (int num : numbers) {
         outFile << num << endl;
     }
 
     // Close the output file
     outFile.close();
-
 }
 
 /**
@@ -139,11 +138,6 @@ int main(int argc, char* argv[]) {
                 // Set the number of threads
                 NUM_THREADS = stoi(optarg);
                 break;
-
-            case 'n':
-                // Set the number of iterations
-                NUM_ITERATIONS = stoi(optarg);
-                break;
             
             case 'b':
                 //Set the barrier type
@@ -174,6 +168,11 @@ int main(int argc, char* argv[]) {
             default:
                 abort();
         }
+    }
+    if (NUM_THREADS > 2 && (lock_type == "peterson" || lock_type == "petersonrel")){
+        //Recalculating number of iterations accordingly
+        DEBUG_MSG("The lock type is " << lock_type);
+        NUM_THREADS = 2;
     }
     // Check if input and output files are provided
     if (inputFile.empty() || outputFile.empty()) {

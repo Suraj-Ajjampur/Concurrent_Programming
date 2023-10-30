@@ -115,5 +115,91 @@ void SenseBarrier::ArriveAndWait() {
         }
 }
 
+int Petersons::my(int tid) {
+    // Define the logic to determine the current thread
+    return tid; // For simplicity, assuming tid is already the correct identifier
+}
+
+int Petersons::other(int tid) {
+    // Define the logic to determine the other thread
+    return 1- tid; // Assuming there are only two threads with identifiers 0 and 1
+}
+
+Petersons::Petersons(bool memory_order) {
+    DEBUG_MSG("Start Construction!!"); 
+    if(memory_order == SEQ_CONISTENCY){
+        //Reset the desire of both the threads to acquire the lock
+        desires[0].store(false, SEQ_CST);
+        desires[1].store(false, SEQ_CST);
+        //Give the turn to one of them
+        turn.store(0, SEQ_CST);
+    }else{ // For RELEASE_CONSISTENCY
+        //Reset the desire of both the threads to acquire the lock
+        desires[0].store(false, RELEASE);
+        desires[1].store(false, RELEASE);
+        //Give the turn to on of them
+        turn.store(0, RELEASE);
+    }
+    mem_order = memory_order;
+    DEBUG_MSG("Peterson's constructed!!");
+}
+
+void Petersons::lock(int tid){ 
+    DEBUG_MSG("Peterson's lock start");
+    if(mem_order == SEQ_CONISTENCY){
+        // Say you want to acquire lock 
+        desires[my(tid)].store(true,SEQ_CST); 
+        
+        // But, first give the other thread 
+        // the chance to acquire lock 
+        // Essentially yeild the lock to the other thread
+        turn.store(other(tid),SEQ_CST); 
+        
+        // Wait until the other thread 
+        // looses the desire 
+        // to acquire lock or it is your 
+        // turn to get the lock. 
+        /* We can execute the critical section if either the other thread doesn't desire the lock
+        or the other thread does desire the lock and it's our turn*/
+        while(desires[other(tid)].load(SEQ_CST)
+        && turn.load(SEQ_CST) == other(tid)){
+            //Spin till it's safe to acquire the lock
+        }
+    }else{ // Release Consistency
+        // Say you want to acquire lock 
+        desires[my(tid)].store(true,RELEASE); 
+        // But, first give the other thread 
+        // the chance to acquire lock 
+        // Essentially yeild the lock to the other thread
+        turn.store(other(tid),RELEASE); 
+        atomic_thread_fence(SEQ_CST);
+        // Wait until the other thread 
+        // looses the desire 
+        // to acquire lock or it is your 
+        // turn to get the lock. 
+        /* We can execute the critical section if either the other thread doesn't desire the lock
+        or the other thread does desire the lock and it's our turn*/
+        while(desires[other(tid)].load(ACQUIRE)
+        && turn.load(ACQUIRE) == other(tid)){
+            //Spin till it's safe to acquire the lock
+        }
+    }
+    //cout << "Peterson's lock acquired!!" << endl; 
+}
+
+void Petersons::unlock(int tid) { 
+    // You do not desire to acquire lock
+    // allowing the other thread to acquire the lock. 
+    if(mem_order == SEQ_CONISTENCY){
+        desires[my(tid)].store(false,SEQ_CST); 
+    }else{
+        desires[my(tid)].store(false,RELEASE); 
+        atomic_thread_fence(SEQ_CST);
+    }
+    DEBUG_MSG("Peterson's lock released!!");
+} 
+
+
+
 
 

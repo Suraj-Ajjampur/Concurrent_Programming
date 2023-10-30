@@ -1,121 +1,201 @@
-#include "bucket_sort.h"
+/*****************************************************************
+ * @author Suraj Ajjampur
+ * @file bucket_sort.cpp
+ * 
+ * @brief This C++ source file implements bucket sort using custom-built concurrency primitives
+ * 
+ * @date 24 Oct 2023
+********************************************************************/
 
-//Statement allows us to use the vector element with the 'std::' prefix within the functions that include this header.
+#include "bucket_sort.h"
+#include "my_atomics.h"
+
 using namespace std;
 
-mutex lk; // Mutex for locking
-// Define a vector to store thread pointers and the number of threads
-//vector<thread*> threads;
+/**************** Globals *********************/
+extern string lock_type;
+extern string bar_type;
+extern int NUM_THREADS;
+
+pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
+atomic<bool> lock_flag(false);
+typedef struct ticket{
+    atomic<int> next_num;
+    atomic<int> now_serving;
+}ticket_t;
+ticket_t myTicket = {0, 0};
+atomic<MCSLock::Node*> tail = nullptr;
+MCSLock mcslock(tail);
+pthread_barrier_t myBarrier;
 
 /**
- * Distribute elements from the input array into buckets based on their values.
- * 
- * @param input_array Reference to the input array of integers.
- * @param minVal The minimum value in the input_array.
- * @param buckets Reference to the vector of map-based buckets for storing sorted elements.
- * @param range The range of values per bucket.
- * @param k The number of buckets.
+ * @brief Finds the maximum element in an integer vector.
+ *
+ * This function iterates through the given integer vector to find the maximum
+ * element and returns its value. It considers the first 'n' elements in the
+ * vector for the search.
+ *
+ * @param A The input integer vector.
+ * @param n The number of elements in the vector to consider.
+ * @return The maximum element in the vector 'A'.
  */
-//thread(Distribute, ref(subArray), minVal, ref(buckets), range, k);
-void Distribute(
-    vector<int>& input_array,
-    int minVal,
-    vector<map<int, int>>& buckets,
-    int range,
-    int k
-) {
-    // Distribute elements into buckets
-    for (int value : input_array) {
-        std::cout << "value: " << value << ", minVal: " << minVal << ", range: " << range << std::endl;
-        // Calculate the index of the bucket for the current value
-        int bucketIndex = (value - minVal) / range;
+int Max(vector<int> A, int n) {
+    int max = -32768; // Initialize 'max' to a small value
 
-        // Ensure the bucketIndex is within bounds
-        if (bucketIndex >= k) {
-            bucketIndex = k - 1;
+    // Iterate through the vector to find the maximum element
+    for (int i = 0; i < n; i++) {
+        if (A[i] > max) {
+            max = A[i]; // Update 'max' if a larger element is found
         }
+    }
 
-        // Lock the mutex to ensure thread safety
-        lk.lock();
+    return max; // Return the maximum element found
+}
 
-        // Debug print statements
-        std::cout << "bucketIndex: " << bucketIndex << std::endl;
-        std::cout << "buckets size: " << buckets.size() << std::endl;
-        // Place the value in the appropriate bucket (sorted map)
-        buckets[bucketIndex][value] = value;
-        lk.unlock(); // Unlock to release the lock
+// Linked List node
+class Node {
+public:
+    int value;
+    Node* next;
+};
+
+/**
+ * @brief Inserts an element into a specific bucket in a multi-threaded environment.
+ *
+ * This function inserts an element into a specified bucket of the bins array.
+ * It performs the insertion while respecting the chosen locking mechanism for
+ * synchronization. Depending on the locking mechanism, threads may synchronize
+ * before starting their work using different barriers.
+ *
+ * @param ptrBuckets  Pointer to the array of buckets.
+ * @param idx         The index of the bucket where the element should be inserted.
+ * @param tid         The thread ID of the calling thread.
+ */
+void Insert(Node** ptrBuckets, int idx, int tid) {
+    Node* temp = new Node;
+    temp->value = idx;
+    temp->next = nullptr;
+
+    // Create a Node for this thread (MCSLock specific)
+    MCSLock::Node myNode;
+
+    // Create a Petersons instance with specified consistency (if used)
+    Petersons petersons(SEQ_CONISTENCY);
+
+    // Create a static SenseBarrier (if used)
+    static SenseBarrier barrier(NUM_THREADS);
+
+    // Optionally, create a Petersons instance with RELEASE_CONSISTENCY
+    if (lock_type == "petersonrel") {
+        Petersons petersons(RELEASE_CONSISTENCY);
+    }
+
+    // Threads will synchronize here before starting their work
+    if (bar_type == "pthread") {
+        pthread_barrier_wait(&myBarrier);
+    } else if (bar_type == "sense") {
+        barrier.ArriveAndWait();
+    }
+
+    // Lock acquisition using different locking mechanisms
+    if (lock_type == "tas") {
+        tas_lock(lock_flag);
+    } else if (lock_type == "pthread") {
+        pthread_mutex_lock(&counter_lock); // Lock acquisition
+    } else if (lock_type == "ttas") {
+        ttas_lock(lock_flag);
+    } else if (lock_type == "ticket") {
+        ticket_lock(myTicket.next_num, myTicket.now_serving); // Lock acquisition
+    } else if (lock_type == "mcs") {
+        mcslock.acquire(&myNode);
+    } else if (lock_type == "petersonseq" || lock_type == "petersonrel") {
+        petersons.lock(tid);
+    }
+
+    // Actual insertion into the specified bucket
+    if (ptrBuckets[idx] == nullptr) {
+        ptrBuckets[idx] = temp;
+    } else {
+        Node* p = ptrBuckets[idx];
+        while (p->next != nullptr) {
+            p = p->next;
+        }
+        p->next = temp;
+    }
+
+    // Unlocking and releasing the lock, based on the chosen mechanism
+    if (lock_type == "tas") {
+        tas_unlock(lock_flag);
+    } else if (lock_type == "pthread") {
+        pthread_mutex_unlock(&counter_lock); // Unlock
+    } else if (lock_type == "ttas") {
+        ttas_unlock(lock_flag);
+    } else if (lock_type == "ticket") {
+        ticket_unlock(myTicket.now_serving); // Lock acquisition
+    } else if (lock_type == "mcs") {
+        mcslock.release(&myNode);
+    } else if (lock_type == "petersonseq") {
+        petersons.unlock(tid);
+    } else if (lock_type == "petersonrel") {
+        petersons.unlock(tid);
     }
 }
 
-/**
- * Perform BucketSort on a given input array with automatic determination of the number of buckets (k).
- * 
- * @param input_array Reference to the input array of integers to be sorted.
- * @param numThreads Number of threads to be used for parallel processing.
- * @return A vector of sorted integers.
- */
-vector<int> BucketSort(vector<int>& input_array, int numThreads) {
-    // Determine the number of buckets (k)
-    int n = input_array.size();
 
-    // Set a reasonable default value for k (e.g., based on the number of elements)
-    int k = max(1, n / 10);
 
-    cout << "The number of buckets are " << k << endl;
-    // Create k empty sorted lists (buckets) using maps
-    vector<map<int, int>> buckets(k);
+void BucketSort(vector<int>& A, int NumThreads) {
+    // Determine the maximum value in the input vector
+    int max = Max(A, A.size());
 
-    // Calculate the size of each sub-array
-    int subArraySize = n / numThreads;
-    cout << "The subArraySize is " << subArraySize << endl;
+    // Create bins array with one bucket per possible value
+    vector<Node*> bins(max + 1, nullptr);
 
-    // Launch threads
-    vector<thread> threads(numThreads);
+    // Create threads and launch the Insert function for each thread
+    vector<thread> threads(NumThreads);
+    int chunkSize = A.size() / NumThreads;
 
-    // Divide the input array into input array / numThreads
-    for (int i = 0; i < numThreads; ++i) {
-        // Calculate the start and end indices for the sub-array
-        int startIndex = i * (n / numThreads);
-        int endIndex = (i == numThreads - 1) ? n : (i + 1) * subArraySize;
+    // Initialize a barrier if using pthreads
+    if (bar_type == "pthread") {
+        pthread_barrier_init(&myBarrier, NULL, NUM_THREADS);
+        DEBUG_MSG("pThread Barrier Enabled!!");
+    }
 
-        // Create a sub-array for this thread
-        vector<int> subArray(input_array.begin() + startIndex, input_array.begin() + endIndex);
+    // Distribute elements into buckets in parallel
+    for (int i = 0; i < NumThreads; i++) {
+        int start = i * chunkSize;
+        int end = (i == NumThreads - 1) ? A.size() : (i + 1) * chunkSize;
 
-        // Calculate the minVal and maxVal for the sub-array
-        int minVal, maxVal;
+        // Create a thread that inserts elements into buckets
+        threads[i] = thread([start, end, &bins, &A, i](int tid) {
+            for (int j = start; j < end; j++) {
+                int binIdx = A[j];
+                Insert(&bins[0], binIdx, tid);
+            }
+        }, i);
+    }
 
-        if (!subArray.empty()) {
-            cout << "subArray is not empty\n" << endl;
-            minVal = *min_element(subArray.begin(), subArray.end());
-            maxVal = *max_element(subArray.begin(), subArray.end());
-        } else {
-            cout << "subArray IS empty\n" << endl;
-            // Handle the case when subArray is empty
-            minVal = INT_MAX;
-            maxVal = INT_MIN;
+    // Wait for all threads to finish
+    for (int i = 0; i < NumThreads; i++) {
+        threads[i].join();
+    }
+
+    // Destroy the barrier if using pthreads
+    if (bar_type == "pthread") {
+        pthread_barrier_destroy(&myBarrier);
+    }
+
+    // Update the input vector with the sorted elements from buckets
+    int i = 0;
+    int j = 0;
+    while (i < max + 1) {
+        while (bins[i] != nullptr) {
+            A[j++] = bins[i]->value;
+            Node* temp = bins[i];
+            bins[i] = bins[i]->next;
+            delete temp;
         }
-
-        // Calculate the range for each bucket
-        int range = (maxVal - minVal + 1) / k;
-        cout << "minVal: " << minVal << ", range: " << range << endl;
-        // Create threads and distribute subArray elements into buckets
-        threads[i] = thread(Distribute, ref(subArray), minVal, ref(buckets), range, k);
+        i++;
     }
-
-    // Join threads and clean up resources
-    for (int i = 0; i < numThreads; ++i) {
-        threads[i].join(); // Join each thread
-    }
-
-    // Concatenate sorted buckets into the result vector
-    vector<int> result;
-    for (int i = 0; i < k; ++i) {
-        for (const auto& pair : buckets[i]) {
-            result.push_back(pair.second);
-        }
-    }
-    return result;
 }
-
 
 
