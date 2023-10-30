@@ -70,7 +70,6 @@ void Insert(Node** ptrBuckets, int idx, int tid) {
     }
     // Unlock the mutex when done with the critical section
     if (lock_type == "tas") {
-        cout << "Test and Set\n" << endl;
         tas_unlock(lock_flag);
     }else if(lock_type == "pthread"){
         pthread_mutex_unlock(&counter_lock); // Unlock
