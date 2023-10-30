@@ -130,7 +130,7 @@ void counter(int tid) {
         }
     }
     else {
-        cout << "Invalid lock type: " << lock_type << endl;
+        DEBUG_MSG("Invalid lock type: " << lock_type);
         return;
     }
     // Threads will synchronize here before exiting
@@ -229,7 +229,7 @@ int main(int argc, char* argv[]) {
     //Barrier Initialization
     if(bar_type == "pthread"){
     pthread_barrier_init(&myBarrier, NULL, NUM_THREADS);
-    cout << "pThread Barrier Enabled!!\n";
+    DEBUG_MSG("pThread Barrier Enabled!!");
     }
     else if (bar_type == "sense"){
 
@@ -240,7 +240,7 @@ int main(int argc, char* argv[]) {
     if (NUM_THREADS > 2 && (lock_type == "peterson" || lock_type == "petersonrel")){
         //Recalculating number of iterations accordingly
         NUM_ITERATIONS == NUM_ITERATIONS * (NUM_THREADS - 2);
-        cout << "The lock type is " << lock_type << endl;
+        DEBUG_MSG("The lock type is " << lock_type);
         NUM_THREADS = 2;
     }
 

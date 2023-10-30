@@ -7,7 +7,7 @@ MYSORT_TARGET = mysort
 COUNTER_TARGET = counter
 
 # Define the source files for mysort and counter
-MYSORT_SOURCES = main_mysort.cpp bucket_sort.cpp #my_atomics.cpp
+MYSORT_SOURCES = main_mysort.cpp bucket_sort.cpp my_atomics.cpp
 COUNTER_SOURCES = main_counter.cpp my_atomics.cpp
 
 # Define the object files for mysort and counter

@@ -12,20 +12,9 @@
 #include "bucket_sort.h"
 
 // Global variables
-int cntr = 0;
-atomic<bool> lock_flag(false);
 int NUM_THREADS = 5;
 string lock_type = "pthread"; 
 string bar_type = "pthread";
-pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
-pthread_barrier_t myBarrier;
-
-typedef struct ticket{
-    atomic<int> next_num;
-    atomic<int> now_serving;
-}ticket_t;
-
-ticket_t myTicket = {0, 0};
 
 // Function to print my name
 void printName() {
