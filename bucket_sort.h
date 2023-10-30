@@ -13,6 +13,5 @@
 
 // Declaring BucketSort function prototype
 void BucketSort(std::vector<int>& A, int numThreads);
-void RadixSort(vector<int>& A);
 
 #endif // BUCKET_SORT_H

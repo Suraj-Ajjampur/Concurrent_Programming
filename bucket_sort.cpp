@@ -1,23 +1,12 @@
-#include <iostream>
-#include <vector>
+#include "bucket_sort.h"
 
 using namespace std;
 
-template <class T>
-void Print(T& vec, string s) {
-    cout << s << ": [";
-    for (size_t i = 0; i < vec.size(); i++) {
-        cout << vec[i];
-        if (i < vec.size() - 1) {
-            cout << ", ";
-        }
-    }
-    cout << "]" << endl;
-}
+mutex mtx;
 
-int Max(vector<int> A) {
+int Max(vector<int> A, int n) {
     int max = -32768;
-    for (int i = 0; i < A.size(); i++) {
+    for (int i = 0; i < n; i++) {
         if (A[i] > max) {
             max = A[i];
         }
@@ -32,39 +21,51 @@ public:
     Node* next;
 };
 
-void Insert(Node** ptrBins, int idx) {
+void Insert(Node** ptrBuckets, int idx, int tid) {
     Node* temp = new Node;
     temp->value = idx;
     temp->next = nullptr;
 
-    if (ptrBins[idx] == nullptr) { // ptrBins[idx] is head ptr
-        ptrBins[idx] = temp;
+    // Lock the mutex to protect the critical section
+    unique_lock<mutex> lock(mtx);
+    if (ptrBuckets[idx] == nullptr) {
+        ptrBuckets[idx] = temp;
     } else {
-        Node* p = ptrBins[idx];
+        Node* p = ptrBuckets[idx];
         while (p->next != nullptr) {
             p = p->next;
         }
         p->next = temp;
     }
-}
-
-int Delete(Node** ptrBins, int idx) {
-    Node* p = ptrBins[idx];  // ptrBins[idx] is head ptr
-    ptrBins[idx] = ptrBins[idx]->next;
-    int x = p->value;
-    delete p;
-    return x;
+    // Unlock the mutex when done with the critical section
+    lock.unlock();
 }
 
 void BucketSort(vector<int>& A, int NumThreads) {
-    int max = Max(A);
+    int max = Max(A, A.size());
 
     // Create bins array
     vector<Node*> bins(max + 1, nullptr);
 
-    // Update count array values based on A values
-    for (int i = 0; i < A.size(); i++) {
-        Insert(&bins[0], A[i]);
+    // Create threads and launch the Insert function
+    vector<thread> threads(NumThreads);
+    int chunkSize = A.size() / NumThreads;
+
+    for (int i = 0; i < NumThreads; i++) {
+        int start = i * chunkSize;
+        int end = (i == NumThreads - 1) ? A.size() : (i + 1) * chunkSize;
+
+        threads[i] = thread([start, end, &bins, &A, i](int tid) {
+            for (int j = start; j < end; j++) {
+                int binIdx = A[j];
+                Insert(&bins[0], binIdx, tid);
+            }
+        }, i);
+    }
+
+    // Wait for all threads to finish
+    for (int i = 0; i < NumThreads; i++) {
+        threads[i].join();
     }
 
     // Update A with sorted elements
@@ -72,8 +73,12 @@ void BucketSort(vector<int>& A, int NumThreads) {
     int j = 0;
     while (i < max + 1) {
         while (bins[i] != nullptr) {
-            A[j++] = Delete(&bins[0], i);
+            A[j++] = bins[i]->value;
+            Node* temp = bins[i];
+            bins[i] = bins[i]->next;
+            delete temp;
         }
         i++;
     }
 }
+
