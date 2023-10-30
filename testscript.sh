@@ -48,4 +48,4 @@ for input_file in ${TESTDIR}/*.txt; do
     run_test "$input_file"
 done
 
-rm *.ans ${TESTDIR}/*.ans
+rm *.my ${TESTDIR}/*.my

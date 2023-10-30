@@ -13,8 +13,8 @@
 
 // Global variables
 int NUM_THREADS = 5;
-string lock_type = "pthread"; 
-string bar_type = "pthread";
+string lock_type; 
+string bar_type;
 
 // Function to print my name
 void printName() {
@@ -159,6 +159,11 @@ int main(int argc, char* argv[]) {
             default:
                 abort();
         }
+    }
+    if (NUM_THREADS > 2 && (lock_type == "peterson" || lock_type == "petersonrel")){
+        //Recalculating number of iterations accordingly
+        DEBUG_MSG("The lock type is " << lock_type);
+        NUM_THREADS = 2;
     }
     // Check if input and output files are provided
     if (inputFile.empty() || outputFile.empty()) {

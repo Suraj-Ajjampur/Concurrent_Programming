@@ -231,6 +231,9 @@ int main(int argc, char* argv[]) {
     pthread_barrier_init(&myBarrier, NULL, NUM_THREADS);
     DEBUG_MSG("pThread Barrier Enabled!!");
     }
+    else if (bar_type == "sense"){
+
+    }
 
     // If user wants a lock constructed using peterson's algorithm
     // We have to reset number of threads to 2

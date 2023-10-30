@@ -6,6 +6,9 @@ using namespace std;
 //mutex mtx;
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER; // Initialize the pthread mutex
 extern string lock_type;
+extern string bar_type;
+extern int NUM_THREADS;
+
 atomic<bool> lock_flag(false);
 typedef struct ticket{
     atomic<int> next_num;
@@ -41,10 +44,19 @@ void Insert(Node** ptrBuckets, int idx, int tid) {
     temp->next = nullptr;
     MCSLock::Node myNode; // Create a Node for this thread
     Petersons petersons(SEQ_CONISTENCY);
+    static SenseBarrier barrier(NUM_THREADS);
+    
     if(lock_type == "petersonrel"){
         Petersons petersons(RELEASE_CONSISTENCY);
     }
     
+    // Threads will synchronize here before starting their work
+    if(bar_type == "pthread"){
+        pthread_barrier_wait(&myBarrier);
+    }
+    else if (bar_type == "sense"){
+        barrier.ArriveAndWait();
+    }
     // Lock the mutex to protect the critical section
     if (lock_type == "tas") {
         tas_lock(lock_flag);
@@ -96,6 +108,11 @@ void BucketSort(vector<int>& A, int NumThreads) {
     vector<thread> threads(NumThreads);
     int chunkSize = A.size() / NumThreads;
 
+    if(bar_type == "pthread"){
+    pthread_barrier_init(&myBarrier, NULL, NUM_THREADS);
+    DEBUG_MSG("pThread Barrier Enabled!!");
+    }
+
     for (int i = 0; i < NumThreads; i++) {
         int start = i * chunkSize;
         int end = (i == NumThreads - 1) ? A.size() : (i + 1) * chunkSize;
@@ -111,6 +128,10 @@ void BucketSort(vector<int>& A, int NumThreads) {
     // Wait for all threads to finish
     for (int i = 0; i < NumThreads; i++) {
         threads[i].join();
+    }
+
+    if(bar_type == "pthread"){
+    pthread_barrier_destroy(&myBarrier);
     }
 
     // Update A with sorted elements

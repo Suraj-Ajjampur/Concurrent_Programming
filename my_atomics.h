@@ -31,6 +31,7 @@
         } \
     } while(0)
 
+/** Memory order macros **/
 #define SEQ_CST std::memory_order_seq_cst
 #define RELAXED std::memory_order_relaxed
 #define ACQUIRE std::memory_order_acquire
