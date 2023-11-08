@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Autograde",
+      "setup": "sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; sudo apt install -y g++-11; chmod u+x ./autograde.sh; mkdir /home/runner/.bin/; ln -s /usr/bin/g++-11  /home/runner/.bin/g++;",
+      "run": "PATH=/home/runner/.bin:$PATH ./autograde.sh",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": null
+    }
+  ]
+}
