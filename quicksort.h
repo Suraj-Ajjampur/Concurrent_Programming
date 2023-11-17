@@ -3,6 +3,7 @@
 #define QUICKSORT_H
 
 #include <vector>
+#include <omp.h>
 
 #define DEBUG_MODE 0
 

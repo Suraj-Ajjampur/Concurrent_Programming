@@ -51,7 +51,9 @@ void sortAndPrintFile(const string& inputFile, const string& outputFile, const s
 
     // Close the input file
     inFile.close();
-
+    
+    // Start measuring time
+    auto start_time = chrono::high_resolution_clock::now();
     // Sort the vector based on the selected algorithm
     if (algorithm == "quick") {
        quicksort(numbers, 0, numbers.size() - 1); // Call the quicksort function
@@ -61,6 +63,13 @@ void sortAndPrintFile(const string& inputFile, const string& outputFile, const s
         cerr << "Error: Invalid algorithm specified." << endl;
         return;
     }
+    // Stop measuring time
+    auto end_time = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end_time - start_time);
+
+    // Calculate and print elapsed time in nanoseconds
+    cout << "Time taken: " << duration.count() << " nanoseconds" << endl;
+
 
     // Open the output file
     ofstream outFile(outputFile);

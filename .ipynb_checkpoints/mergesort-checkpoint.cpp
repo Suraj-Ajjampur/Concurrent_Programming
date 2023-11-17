@@ -7,6 +7,8 @@
  * @date 15 Nov 2023
  * 
  * @ref https://www.geeksforgeeks.org/multithreading-in-cpp/
+ *
+ * @ref https://tildesites.bowdoin.edu/~ltoma/teaching/cs3225-GIS/fall16/Lectures/openmp.html
 ********************************************************************/
 
 // Includes
