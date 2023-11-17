@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ### Build your executable
-make
+make clean && make
 
 ### Generate a test file
 ### (of unspecified range and size)
@@ -60,6 +60,6 @@ do
     then
         RET=0
     fi
-
-    exit $RET
 done
+
+exit $RET
